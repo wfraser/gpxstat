@@ -1,0 +1,12 @@
+[package]
+name = "gpxstat"
+version = "0.1.0"
+authors = ["Bill Fraser <wfraser@codewise.org>"]
+edition = "2018"
+
+[dependencies]
+anyhow = "1"
+chrono = "0.4"
+#strong-xml = "0.6"
+#strong-xml = { path = "../ext/strong-xml/strong-xml" }
+strong-xml = { git = "https://github.com/wfraser/strong-xml", rev = "4564d2ca3a63673c7f79d554cda04408aac7cdf3" }
