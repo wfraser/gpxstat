@@ -1,18 +1,40 @@
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use chrono::offset::TimeZone;
 use std::fs;
+use std::path::PathBuf;
 use std::str::FromStr;
 use strong_xml::XmlRead;
+use structopt::StructOpt;
 
 mod gpx;
 mod units;
 
 use crate::units::{Meters, Feet, Miles};
 
-const MIN_ELEVATION_GAIN: Meters = Meters(5.);
-const MIN_DISTANCE: Meters = Meters(1.);
-const STANDSTILL_TIME: std::time::Duration = std::time::Duration::from_secs(10);
+#[derive(Debug, StructOpt)]
+struct Args {
+    /// Minimum change in elevation (in meters) for a point to contribute to Elevation Gain.
+    #[structopt(short = "e", long, parse(try_from_str), default_value = "5")]
+    min_elevation_gain: Meters,
+
+    /// Minimum change in distance (in meters) for a point to contribute to Total Distance.
+    #[structopt(short = "d", long, parse(try_from_str), default_value = "1")]
+    min_distance: Meters,
+
+    /// Minimum time (in seconds) without change in position (per --min_distance) before points do
+    /// not contribute to Moving Time.
+    #[structopt(short = "t", long, parse(try_from_str = duration_secs), default_value = "10")]
+    standstill_time: Duration,
+
+    /// Path to a GPX file to process.
+    #[structopt(parse(from_os_str))]
+    input_path: PathBuf,
+}
+
+fn duration_secs(s: &str) -> Result<Duration> {
+    Ok(Duration::seconds(s.parse()?))
+}
 
 #[derive(Debug, Clone, Copy)]
 struct Point {
@@ -45,11 +67,9 @@ impl Point {
 }
 
 fn main() -> Result<()> {
-    
-    let path = std::env::args_os().nth(1)
-        .ok_or_else(|| anyhow!("usage: {} <gpx file>", std::env::args().next().unwrap()))?;
+    let args = Args::from_args();
 
-    let input = fs::read_to_string(&path)
+    let input = fs::read_to_string(&args.input_path)
         .context("failed to read GPX file to string")?;
 
     let gpx = gpx::Gpx::from_str(&input)
@@ -57,12 +77,13 @@ fn main() -> Result<()> {
 
     let file_name = gpx.metadata.as_ref().and_then(|m| m.name.as_deref());
             
-    println!("input: {:?}", path);
+    println!("input: {:?}", args.input_path);
     println!("parameters:");
-    println!("  min elevation gain: {}", MIN_ELEVATION_GAIN);
-    println!("  min distance: {}", MIN_DISTANCE);
+    println!("  min elevation gain: {}", args.min_elevation_gain);
+    println!("  min distance: {}", args.min_distance);
 
-    let min_moving_speed = MIN_DISTANCE.0 / STANDSTILL_TIME.as_millis() as f64 * 1000.;
+    let min_moving_speed = args.min_distance.0
+        / args.standstill_time.num_milliseconds() as f64 * 1000.;
     println!("  min moving speed = {} m/s", min_moving_speed);
 
     for (tnum, track) in gpx.tracks.into_iter().enumerate() {
@@ -115,7 +136,7 @@ fn main() -> Result<()> {
                     ele_end = e;
 
                     if let Some(Meters(last)) = ele_last {
-                        if (e.0 - last).abs() >= MIN_ELEVATION_GAIN.0 {
+                        if (e.0 - last).abs() >= args.min_elevation_gain.0 {
                             if e.0 > last {
                                 ele_gain.0 += e.0 - last;
                             }
@@ -128,7 +149,7 @@ fn main() -> Result<()> {
 
                 if let Some(last) = dist_last {
                     let (dist, time, speed) = dist_time_speed(&last, &point);
-                    if dist.0 >= MIN_DISTANCE.0 {
+                    if dist.0 >= args.min_distance.0 {
                         dist_total.0 += dist.0;
                         if speed >= min_moving_speed {
                             time_moving = time_moving + time;

@@ -10,3 +10,4 @@ chrono = "0.4"
 #strong-xml = "0.6"
 #strong-xml = { path = "../ext/strong-xml/strong-xml" }
 strong-xml = { git = "https://github.com/wfraser/strong-xml", rev = "4564d2ca3a63673c7f79d554cda04408aac7cdf3" }
+structopt = "0.3"
