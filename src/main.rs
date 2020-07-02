@@ -27,6 +27,11 @@ struct Args {
     #[structopt(short = "t", long, parse(try_from_str = duration_secs), default_value = "10")]
     standstill_time: Duration,
 
+    /// Join all segments in a track as one continuous segment instead of processing them
+    /// separately.
+    #[structopt(short = "j", long)]
+    join_segments: bool,
+
     /// Path to a GPX file to process.
     #[structopt(parse(from_os_str))]
     input_path: PathBuf,
@@ -94,7 +99,21 @@ fn main() -> Result<()> {
 
         println!("track {}: {}", tnum + 1, name);
 
-        for (snum, seg) in track.segments.into_iter().enumerate() {
+        let segments = if args.join_segments {
+            println!("  (all segments joined)");
+            vec![gpx::Segment {
+                points: track.segments
+                    .into_iter()
+                    .map(|seg| seg.points.into_iter())
+                    .flatten()
+                    .collect()
+                },
+            ].into_iter()
+        } else {
+            track.segments.into_iter()
+        };
+
+        for (snum, seg) in segments.enumerate() {
             println!("  segment {}:", snum + 1);
 
             let mut ele_start = Meters(std::f64::NAN);
