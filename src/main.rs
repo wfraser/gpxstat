@@ -202,6 +202,26 @@ fn main() -> Result<()> {
             println!("    points: {}", seg.points.len());
 
             for point in seg.points {
+                time_end = point.time;
+
+                // Distance smoothing.
+                let mut use_point = true;
+                if let Some(last) = dist_last {
+                    let (dist, time, speed) = dist_time_speed(&last, &point);
+                    if dist.0 >= args.min_distance.0 {
+                        dist_total.0 += dist.0;
+                        if speed >= min_moving_speed {
+                            time_moving = time_moving + time;
+                        }
+                        dist_last = Some(point);
+                    } else {
+                        use_point = false;
+                    }
+                } else {
+                    dist_last = Some(point);
+                }
+
+                // Elevation smoothing.
                 if let Some(e) = point.ele {
                     if ele_start.0.is_nan() {
                         ele_start = e;
@@ -215,7 +235,7 @@ fn main() -> Result<()> {
                     ele_end = e;
 
                     if let Some(Meters(last)) = ele_last {
-                        if (e.0 - last).abs() >= args.min_elevation_gain.0 {
+                        if use_point && (e.0 - last).abs() >= args.min_elevation_gain.0 {
                             if e.0 > last {
                                 ele_gain.0 += e.0 - last;
                             }
@@ -225,21 +245,6 @@ fn main() -> Result<()> {
                         ele_last = Some(e);
                     }
                 }
-
-                if let Some(last) = dist_last {
-                    let (dist, time, speed) = dist_time_speed(&last, &point);
-                    if dist.0 >= args.min_distance.0 {
-                        dist_total.0 += dist.0;
-                        if speed >= min_moving_speed {
-                            time_moving = time_moving + time;
-                        }
-                        dist_last = Some(point);
-                    }
-                } else {
-                    dist_last = Some(point);
-                }
-
-                time_end = point.time;
             }
 
             println!("    starting elevation: {}", Feet(ele_start));
