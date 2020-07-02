@@ -15,7 +15,7 @@ use crate::units::{Meters, Feet, Miles};
 #[derive(Debug, StructOpt)]
 struct Args {
     /// Minimum change in elevation (in meters) for a point to contribute to Elevation Gain.
-    #[structopt(short = "e", long, parse(try_from_str), default_value = "5")]
+    #[structopt(short = "e", long, parse(try_from_str), default_value = "10")]
     min_elevation_gain: Meters,
 
     /// Minimum change in distance (in meters) for a point to contribute to Total Distance.
