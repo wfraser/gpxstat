@@ -29,16 +29,31 @@ struct Args {
 
     /// Join all segments in a track as one continuous segment instead of processing them
     /// separately.
-    #[structopt(short = "j", long)]
+    #[structopt(long)]
     join_segments: bool,
+
+    /// Join all tracks / files together as one continuous track. Implies --join-segments.
+    #[structopt(long)]
+    join_tracks: bool,
 
     /// Path to a GPX file to process.
     #[structopt(parse(from_os_str))]
-    input_path: PathBuf,
+    input_paths: Vec<PathBuf>,
 }
 
 fn duration_secs(s: &str) -> Result<Duration> {
     Ok(Duration::seconds(s.parse()?))
+}
+
+#[derive(Debug)]
+struct Track {
+    name: String,
+    segments: Vec<Segment>,
+}
+
+#[derive(Debug)]
+struct Segment {
+    points: Vec<Point>,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -74,15 +89,7 @@ impl Point {
 fn main() -> Result<()> {
     let args = Args::from_args();
 
-    let input = fs::read_to_string(&args.input_path)
-        .context("failed to read GPX file to string")?;
-
-    let gpx = gpx::Gpx::from_str(&input)
-        .context("failed to parse GPX")?;
-
-    let file_name = gpx.metadata.as_ref().and_then(|m| m.name.as_deref());
-            
-    println!("input: {:?}", args.input_path);
+    println!("input: {:#?}", args.input_paths);
     println!("parameters:");
     println!("  min elevation gain: {}", args.min_elevation_gain);
     println!("  min distance: {}", args.min_distance);
@@ -91,29 +98,75 @@ fn main() -> Result<()> {
         / args.standstill_time.num_milliseconds() as f64 * 1000.;
     println!("  min moving speed = {} m/s", min_moving_speed);
 
-    for (tnum, track) in gpx.tracks.into_iter().enumerate() {
-        let name = track.name
-            .as_deref()
-            .or(file_name)
-            .unwrap_or("<unnamed>");
+    let mut tracks = Vec::<Track>::with_capacity(args.input_paths.len());
+    for path in args.input_paths {
+        let input = fs::read_to_string(&path)
+            .with_context(|| format!("failed to read GPX file to string: {:?}", path))?;
+        
+        let gpx = gpx::Gpx::from_str(&input)
+            .with_context(|| format!("failed to parse GPX file {:?}", path))?;
 
-        println!("track {}: {}", tnum + 1, name);
+        let file_name = gpx.metadata.as_ref().and_then(|m| m.name.as_deref());
 
-        let segments = if args.join_segments {
+        for gpx_track in gpx.tracks.into_iter() {
+            let track = if args.join_tracks {
+                match tracks.get_mut(0) {
+                    Some(t) => t,
+                    None => {
+                        tracks.push(Track {
+                            name: file_name.unwrap_or("<unnamed>").to_owned(),
+                            segments: vec![],
+                        });
+                        tracks.last_mut().unwrap()
+                    }
+                }
+            } else {
+                tracks.push(Track {
+                    name: gpx_track.name
+                        .as_deref()
+                        .or(file_name)
+                        .unwrap_or("<unnamed>")
+                        .to_owned(),
+                    segments: Vec::with_capacity(gpx_track.segments.len()),
+                });
+                tracks.last_mut().unwrap()
+            };
+
+            for gpx_seg in gpx_track.segments {
+                let segment = if args.join_tracks || args.join_segments {
+                    match track.segments.get_mut(0) {
+                        Some(s) => s,
+                        None => {
+                            track.segments.push(Segment {
+                                points: Vec::with_capacity(gpx_seg.points.len()),
+                            });
+                            track.segments.last_mut().unwrap()
+                        }
+                    }
+                } else {
+                    track.segments.push(Segment {
+                        points: Vec::with_capacity(gpx_seg.points.len()),
+                    });
+                    track.segments.last_mut().unwrap()
+                };
+
+                for gpx_point in gpx_seg.points {
+                    segment.points.push(
+                        Point::new(&gpx_point)?
+                    );
+                }
+            }
+        }
+    }
+
+    for (tnum, track) in tracks.into_iter().enumerate() {
+        println!("track {}: {}", tnum + 1, track.name);
+
+        if args.join_segments {
             println!("  (all segments joined)");
-            vec![gpx::Segment {
-                points: track.segments
-                    .into_iter()
-                    .map(|seg| seg.points.into_iter())
-                    .flatten()
-                    .collect()
-                },
-            ].into_iter()
-        } else {
-            track.segments.into_iter()
-        };
+        }
 
-        for (snum, seg) in segments.enumerate() {
+        for (snum, seg) in track.segments.into_iter().enumerate() {
             println!("  segment {}:", snum + 1);
 
             let mut ele_start = Meters(std::f64::NAN);
@@ -130,9 +183,7 @@ fn main() -> Result<()> {
             let mut time_end: DateTime<Utc>;
             let mut time_moving = Duration::seconds(0);
 
-            let points = seg.points.iter().map(Point::new);
-
-            if let Some(point) = points.clone().next().transpose()? {
+            if let Some(point) = seg.points.get(0) {
                 time_start = point.time;
                 time_end = point.time;
             } else {
@@ -140,8 +191,7 @@ fn main() -> Result<()> {
                 continue;
             }
 
-            for point in points {
-                let point = point?;
+            for point in seg.points {
                 if let Some(e) = point.ele {
                     if ele_start.0.is_nan() {
                         ele_start = e;
