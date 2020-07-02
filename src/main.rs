@@ -96,7 +96,7 @@ fn main() -> Result<()> {
 
     let min_moving_speed = args.min_distance.0
         / args.standstill_time.num_milliseconds() as f64 * 1000.;
-    println!("  min moving speed = {} m/s", min_moving_speed);
+    println!("  min moving speed: {} m/s", min_moving_speed);
 
     let mut tracks = Vec::<Track>::with_capacity(args.input_paths.len());
     for path in args.input_paths {
@@ -107,6 +107,12 @@ fn main() -> Result<()> {
             .with_context(|| format!("failed to parse GPX file {:?}", path))?;
 
         let file_name = gpx.metadata.as_ref().and_then(|m| m.name.as_deref());
+
+        println!("file {:?}:", path);
+        println!("  name: {}", file_name.unwrap_or("<unnamed>"));
+        println!("  creator: {}", gpx.creator);
+        println!("  tracks: {}", gpx.tracks.len());
+        println!("  segments: {}", gpx.tracks.iter().map(|t| t.segments.len()).sum::<usize>());
 
         for gpx_track in gpx.tracks.into_iter() {
             let track = if args.join_tracks {
@@ -159,6 +165,8 @@ fn main() -> Result<()> {
         }
     }
 
+    println!("---");
+
     for (tnum, track) in tracks.into_iter().enumerate() {
         println!("track {}: {}", tnum + 1, track.name);
 
@@ -190,6 +198,8 @@ fn main() -> Result<()> {
                 println!("    no points");
                 continue;
             }
+
+            println!("    points: {}", seg.points.len());
 
             for point in seg.points {
                 if let Some(e) = point.ele {
