@@ -37,7 +37,7 @@ struct Args {
     join_tracks: bool,
 
     /// Path to a GPX file to process.
-    #[structopt(parse(from_os_str))]
+    #[structopt(parse(from_os_str), required(true))]
     input_paths: Vec<PathBuf>,
 }
 
