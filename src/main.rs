@@ -102,7 +102,7 @@ fn main() -> Result<()> {
     for path in args.input_paths {
         let input = fs::read_to_string(&path)
             .with_context(|| format!("failed to read GPX file to string: {:?}", path))?;
-        
+
         let gpx = gpx::Gpx::from_str(&input)
             .with_context(|| format!("failed to parse GPX file {:?}", path))?;
 
