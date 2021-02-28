@@ -74,14 +74,15 @@ impl Point {
                 .map(Meters::from_str)
                 .transpose()
                 .context("invalid altitude")?,
-            time: Utc.datetime_from_str(&gpx.time, "%+")
+            time: DateTime::parse_from_str(&gpx.time, "%+")
+                .map(|dt| dt.with_timezone(&Utc))
                 .or_else(|e| {
                     // HACK: try the time with 'Z' appended, for bad GPX files missing timezone
                     // info.
                     Utc.datetime_from_str(&(gpx.time.to_owned() + "Z"), "%+")
                         .map_err(|_| e) // restore original error if this fails
                 })
-                .context("invalid date/time")?,
+                .with_context(|| format!("invalid date/time {:?}", gpx.time))?,
         })
     }
 }
