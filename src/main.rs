@@ -1,6 +1,7 @@
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Duration, Utc};
 use chrono::offset::TimeZone;
+use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
@@ -202,8 +203,22 @@ fn main() -> Result<()> {
 
             println!("    points: {}", seg.points.len());
 
+            let mut last_time = None;
+            let mut time_deltas = vec![];
+
             for point in seg.points {
                 time_end = point.time;
+
+                if let Some(t) = last_time {
+                    if point.time < t {
+                        bail!("time went backwards? {:?} -> {:?}", t, point.time);
+                    }
+                    let delta: chrono::Duration = point.time - t;
+                    let stddelta = delta.to_std()
+                        .with_context(|| format!("duration out of range: {:?}", delta))?;
+                    time_deltas.push(stddelta);
+                }
+                last_time = Some(point.time);
 
                 // Distance smoothing.
                 let mut use_point = true;
@@ -247,6 +262,20 @@ fn main() -> Result<()> {
                     }
                 }
             }
+
+            time_deltas.sort();
+            let mean = time_deltas.iter()
+                .sum::<std::time::Duration>() / time_deltas.len() as u32;
+            let median = time_deltas[time_deltas.len() / 2];
+            let mut freq = BTreeMap::new();
+            for d in &time_deltas {
+                *freq.entry(d).or_insert(0) += 1;
+            }
+            let mode = freq.iter().max_by(|(_, count1), (_, count2)| count1.cmp(count2)).unwrap().0;
+            println!("    point time deltas:");
+            println!("        mean:   {:?}", mean);
+            println!("        median: {:?}", median);
+            println!("        mode:   {:?}", mode);
 
             println!("    starting elevation: {}", Feet(ele_start));
             println!("    ending elevation: {}", Feet(ele_end));
