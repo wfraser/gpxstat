@@ -7,7 +7,5 @@ edition = "2018"
 [dependencies]
 anyhow = "1"
 chrono = "0.4"
-#strong-xml = "0.6"
-#strong-xml = { path = "../ext/strong-xml/strong-xml" }
-strong-xml = { git = "https://github.com/wfraser/strong-xml" }
+strong-xml = "0.6.2"
 structopt = "0.3"
