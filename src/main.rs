@@ -123,7 +123,7 @@ fn main() -> Result<()> {
         println!("  tracks: {}", gpx.tracks.len());
         println!("  segments: {}", gpx.tracks.iter().map(|t| t.segments.len()).sum::<usize>());
 
-        for gpx_track in gpx.tracks.into_iter() {
+        for gpx_track in gpx.tracks {
             let track = if args.join_tracks {
                 match tracks.get_mut(0) {
                     Some(t) => t,
