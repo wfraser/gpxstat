@@ -40,6 +40,13 @@ struct Args {
     /// Path to a GPX file to process.
     #[structopt(parse(from_os_str), required(true))]
     input_paths: Vec<PathBuf>,
+
+    /// Filter out points with an elevation of exactly zero.
+    ///
+    /// Some software emits GPX points with <ele>0</ele> when it doesn't have a good fix, and you
+    /// will want to discard these to avoid incorrect elevation data.
+    #[structopt(long)]
+    filter_zero_ele: bool,
 }
 
 fn duration_secs(s: &str) -> Result<Duration> {
@@ -159,9 +166,11 @@ fn main() -> Result<()> {
                 };
 
                 for gpx_point in gpx_seg.points {
-                    segment.points.push(
-                        Point::new(&gpx_point)?
-                    );
+                    let p = Point::new(&gpx_point)?;
+                    if args.filter_zero_ele && p.ele == Some(Meters(0.)) {
+                        continue;
+                    }
+                    segment.points.push(p);
                 }
             }
         }
