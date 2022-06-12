@@ -105,7 +105,8 @@ impl Point {
 fn main() -> Result<()> {
     let args = Args::from_args();
 
-    println!("input: {:#?}", args.input_paths);
+    println!("{} v{} by {}",
+        env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_AUTHORS"));
     println!("parameters:");
     println!("  min elevation gain: {}", args.min_elevation_gain);
     println!("  min distance: {}", args.min_distance);
