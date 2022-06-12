@@ -47,6 +47,13 @@ struct Args {
     /// will want to discard these to avoid incorrect elevation data.
     #[structopt(long)]
     filter_zero_ele: bool,
+
+    /// Filter out points with an elevation below this many meters.
+    ///
+    /// Some software emits GPX points with nonsensical low elevations whan it doesn't have a good
+    /// fix, and you will want to discard these to avoid incorrect elevation data.
+    #[structopt(long)]
+    filter_ele_below: Option<Meters>,
 }
 
 fn duration_secs(s: &str) -> Result<Duration> {
@@ -169,6 +176,13 @@ fn main() -> Result<()> {
                     let p = Point::new(&gpx_point)?;
                     if args.filter_zero_ele && p.ele == Some(Meters(0.)) {
                         continue;
+                    }
+                    if let Some(min) = args.filter_ele_below {
+                        if let Some(ele) = p.ele {
+                            if ele < min {
+                                continue;
+                            }
+                        }
                     }
                     segment.points.push(p);
                 }
