@@ -7,6 +7,9 @@ pub struct Meters(pub f64); // todo: use decimal instead
 impl FromStr for Meters {
     type Err = std::num::ParseFloatError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some(ft) = s.strip_suffix("ft") {
+            return Ok(Meters(ft.trim().parse::<f64>()? * 0.3048));
+        }
         Ok(Meters(s.parse()?))
     }
 }
