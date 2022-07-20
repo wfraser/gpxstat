@@ -1,12 +1,12 @@
 use anyhow::{bail, Context, Result};
-use chrono::{DateTime, Duration, Utc};
-use chrono::offset::TimeZone;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use strong_xml::XmlRead;
 use structopt::StructOpt;
+use time::{Duration, OffsetDateTime};
+use time::format_description::well_known::Rfc3339;
 
 mod gpx;
 mod units;
@@ -76,7 +76,7 @@ struct Point {
     lat: f64,
     lon: f64,
     ele: Option<Meters>,
-    time: DateTime<Utc>,
+    time: OffsetDateTime,
 }
 
 impl Point {
@@ -89,12 +89,11 @@ impl Point {
                 .map(Meters::from_str)
                 .transpose()
                 .context("invalid altitude")?,
-            time: DateTime::parse_from_str(&gpx.time, "%+")
-                .map(|dt| dt.with_timezone(&Utc))
+            time: OffsetDateTime::parse(&gpx.time, &Rfc3339)
                 .or_else(|e| {
                     // HACK: try the time with 'Z' appended, for bad GPX files missing timezone
                     // info.
-                    Utc.datetime_from_str(&(gpx.time.to_owned() + "Z"), "%+")
+                    OffsetDateTime::parse(&(gpx.time.to_owned() + "Z"), &Rfc3339)
                         .map_err(|_| e) // restore original error if this fails
                 })
                 .with_context(|| format!("invalid date/time {:?}", gpx.time))?,
@@ -112,7 +111,7 @@ fn main() -> Result<()> {
     println!("  min distance: {}", args.min_distance);
 
     let min_moving_speed = args.min_distance.0
-        / args.standstill_time.num_milliseconds() as f64 * 1000.;
+        / args.standstill_time.as_seconds_f64();
     println!("  min moving speed: {} m/s", min_moving_speed);
 
     let mut tracks = Vec::<Track>::with_capacity(args.input_paths.len());
@@ -213,8 +212,8 @@ fn main() -> Result<()> {
             let mut dist_total = Meters(0.);
             let mut dist_last: Option<Point> = None;
 
-            let time_start: DateTime<Utc>;
-            let mut time_end: DateTime<Utc>;
+            let time_start: OffsetDateTime;
+            let mut time_end: OffsetDateTime;
             let mut time_moving = Duration::seconds(0);
 
             if let Some(point) = seg.points.get(0) {
@@ -237,10 +236,8 @@ fn main() -> Result<()> {
                     if point.time < t {
                         bail!("time went backwards? {:?} -> {:?}", t, point.time);
                     }
-                    let delta: chrono::Duration = point.time - t;
-                    let stddelta = delta.to_std()
-                        .with_context(|| format!("duration out of range: {:?}", delta))?;
-                    time_deltas.push(stddelta);
+                    let delta = point.time - t;
+                    time_deltas.push(delta);
                 }
                 last_time = Some(point.time);
 
@@ -251,7 +248,7 @@ fn main() -> Result<()> {
                     if dist.0 >= args.min_distance.0 {
                         dist_total.0 += dist.0;
                         if speed >= min_moving_speed {
-                            time_moving = time_moving + time;
+                            time_moving += time;
                         }
                         dist_last = Some(point);
                     } else {
@@ -289,7 +286,7 @@ fn main() -> Result<()> {
 
             time_deltas.sort();
             let mean = time_deltas.iter()
-                .sum::<std::time::Duration>() / time_deltas.len() as u32;
+                .sum::<Duration>() / time_deltas.len() as u32;
             let median = time_deltas[time_deltas.len() / 2];
             let mut freq = BTreeMap::new();
             for d in &time_deltas {
@@ -297,9 +294,9 @@ fn main() -> Result<()> {
             }
             let mode = freq.iter().max_by(|(_, count1), (_, count2)| count1.cmp(count2)).unwrap().0;
             println!("    point time deltas:");
-            println!("        mean:   {:?}", mean);
-            println!("        median: {:?}", median);
-            println!("        mode:   {:?}", mode);
+            println!("        mean:   {}s", mean.as_seconds_f64());
+            println!("        median: {}s", median.as_seconds_f64());
+            println!("        mode:   {}s", mode.as_seconds_f64());
 
             println!("    starting elevation: {}", Feet(ele_start));
             println!("    ending elevation: {}", Feet(ele_end));
@@ -315,10 +312,10 @@ fn main() -> Result<()> {
     Ok(())
 }
 
-fn fmt_duration(d: chrono::Duration) -> String {
-    let hours = d.num_hours();
-    let from_hours = chrono::Duration::hours(hours);
-    let mins = (d - from_hours).num_minutes();
+fn fmt_duration(d: Duration) -> String {
+    let hours = d.whole_hours();
+    let from_hours = Duration::hours(hours);
+    let mins = (d - from_hours).whole_minutes();
     format!("{}:{:02}", hours, mins)
 }
 
@@ -342,6 +339,6 @@ fn distance(a: &Point, b: &Point) -> Meters {
 fn dist_time_speed(a: &Point, b: &Point) -> (Meters, Duration, f64) {
     let dist = distance(a, b);
     let time = if a.time > b.time { a.time - b.time } else { b.time - a.time };
-    let speed = dist.0 / time.num_milliseconds().abs() as f64 * 1000.;
+    let speed = dist.0 / time.as_seconds_f64().abs();
     (dist, time, speed)
 }
