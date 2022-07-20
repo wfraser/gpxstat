@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::atomic::{AtomicBool, Ordering};
 use strong_xml::XmlRead;
 use structopt::StructOpt;
 use time::{Duration, OffsetDateTime};
@@ -79,6 +80,8 @@ struct Point {
     time: OffsetDateTime,
 }
 
+static HAVE_WARNED_ABOUT_TIMEZONE: AtomicBool = AtomicBool::new(false);
+
 impl Point {
     pub fn new(gpx: &gpx::Point<'_>) -> Result<Self> {
         Ok(Self {
@@ -93,8 +96,13 @@ impl Point {
                 .or_else(|e| {
                     // HACK: try the time with 'Z' appended, for bad GPX files missing timezone
                     // info.
-                    OffsetDateTime::parse(&(gpx.time.to_owned() + "Z"), &Rfc3339)
-                        .map_err(|_| e) // restore original error if this fails
+                    let result = OffsetDateTime::parse(&(gpx.time.to_owned() + "Z"), &Rfc3339)
+                        .map_err(|_| e); // restore original error if this fails
+                    if result.is_ok() && !HAVE_WARNED_ABOUT_TIMEZONE.swap(true, Ordering::SeqCst) {
+                        // if this worked, warn once.
+                        eprintln!("WARNING: time in GPX is missing timezone info. Assuming UTC.");
+                    }
+                    result
                 })
                 .with_context(|| format!("invalid date/time {:?}", gpx.time))?,
         })
