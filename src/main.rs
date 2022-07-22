@@ -292,6 +292,9 @@ fn main() -> Result<()> {
                 }
             }
 
+            if time_deltas.is_empty() {
+                time_deltas.push(Duration::default());
+            }
             time_deltas.sort();
             let mean = time_deltas.iter()
                 .sum::<Duration>() / time_deltas.len() as u32;
