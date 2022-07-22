@@ -1,6 +1,6 @@
 [package]
 name = "gpxstat"
-version = "1.1.1"
+version = "1.1.2"
 authors = ["Bill Fraser <wfraser@codewise.org>"]
 edition = "2021"
 

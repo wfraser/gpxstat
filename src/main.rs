@@ -242,7 +242,7 @@ fn main() -> Result<()> {
 
                 if let Some(t) = last_time {
                     if point.time < t {
-                        bail!("time went backwards? {:?} -> {:?}", t, point.time);
+                        bail!("time went backwards? {} -> {}", t, point.time);
                     }
                     let delta = point.time - t;
                     time_deltas.push(delta);
