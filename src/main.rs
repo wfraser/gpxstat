@@ -1,11 +1,11 @@
 use anyhow::{bail, Context, Result};
+use clap::Parser;
 use std::collections::BTreeMap;
 use std::fs;
 use std::path::PathBuf;
 use std::str::FromStr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use strong_xml::XmlRead;
-use structopt::StructOpt;
 use time::{Duration, OffsetDateTime};
 use time::format_description::well_known::Rfc3339;
 
@@ -14,46 +14,46 @@ mod units;
 
 use crate::units::{Meters, Feet, Miles};
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, Parser)]
 struct Args {
     /// Minimum change in elevation (in meters) for a point to contribute to Elevation Gain.
-    #[structopt(short = "e", long, parse(try_from_str), default_value = "10")]
+    #[arg(short = 'e', long, default_value = "10")]
     min_elevation_gain: Meters,
 
     /// Minimum change in distance (in meters) for a point to contribute to Total Distance.
-    #[structopt(short = "d", long, parse(try_from_str), default_value = "1")]
+    #[arg(short = 'd', long, default_value = "1")]
     min_distance: Meters,
 
     /// Minimum time (in seconds) without change in position (per --min_distance) before points do
     /// not contribute to Moving Time.
-    #[structopt(short = "t", long, parse(try_from_str = duration_secs), default_value = "10")]
+    #[arg(short = 't', long, value_parser = duration_secs, default_value = "10")]
     standstill_time: Duration,
 
     /// Join all segments in a track as one continuous segment instead of processing them
     /// separately.
-    #[structopt(long)]
+    #[arg(long)]
     join_segments: bool,
 
     /// Join all tracks / files together as one continuous track. Implies --join-segments.
-    #[structopt(long)]
+    #[arg(long)]
     join_tracks: bool,
 
     /// Path to a GPX file to process.
-    #[structopt(parse(from_os_str), required(true))]
+    #[arg(required(true))]
     input_paths: Vec<PathBuf>,
 
     /// Filter out points with an elevation of exactly zero.
     ///
     /// Some software emits GPX points with <ele>0</ele> when it doesn't have a good fix, and you
     /// will want to discard these to avoid incorrect elevation data.
-    #[structopt(long)]
+    #[arg(long)]
     filter_zero_ele: bool,
 
     /// Filter out points with an elevation below this many meters.
     ///
     /// Some software emits GPX points with nonsensical low elevations whan it doesn't have a good
     /// fix, and you will want to discard these to avoid incorrect elevation data.
-    #[structopt(long)]
+    #[arg(long)]
     filter_ele_below: Option<Meters>,
 }
 
@@ -110,7 +110,7 @@ impl Point {
 }
 
 fn main() -> Result<()> {
-    let args = Args::from_args();
+    let args = Args::parse();
 
     println!("{} v{} by {}",
         env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_AUTHORS"));

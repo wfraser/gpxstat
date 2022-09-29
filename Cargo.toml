@@ -1,11 +1,11 @@
 [package]
 name = "gpxstat"
-version = "1.1.2"
+version = "1.1.3"
 authors = ["Bill Fraser <wfraser@codewise.org>"]
 edition = "2021"
 
 [dependencies]
 anyhow = "1"
+clap = { version = "4.0.2", features = ["derive"] }
 strong-xml = "0.6.2"
-structopt = "0.3"
 time = { version = "0.3", features = ["parsing"] }
