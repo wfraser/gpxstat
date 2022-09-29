@@ -15,6 +15,7 @@ mod units;
 use crate::units::{Meters, Feet, Miles};
 
 #[derive(Debug, Parser)]
+#[command(version)]
 struct Args {
     /// Minimum change in elevation (in meters) for a point to contribute to Elevation Gain.
     #[arg(short = 'e', long, default_value = "10")]
