@@ -6,27 +6,45 @@ A tool for summarizing stats of GPX tracks, for bike rides & hikes.
 # Usage
 
 ```
-gpxstat gpxstat [FLAGS] [OPTIONS] <input-path>...
+gpxstat gpxstat [OPTIONS] <INPUT_PATHS>...
 ```
 
-Flags:
-* `-h`, `--help`: Prints help information
-* `--join-segments`: Join all segments in a track as one continuous segment instead of processing
-    them separately
-* `--join-tracks`: Join all tracks / files together as one continuous track. Implies
-    `--join-segments`.
-* `-V`, `--version`: Prints version information
+Arguments:
+* `<INPUT_PATHS>...`
+  * Path to a GPX file to process
 
 Options:
-* `-d`, `--min-distance <min-distance>`
-    * Minimum change in distance (in meters) for a point to contribute to Total Distance
-        [default: 1]
-* `-e`, `--min-elevation-gain <min-elevation-gain>`
-    * Minimum change in elevation (in meters) for a point to contribute to Elevation Gain
-        [default: 10]
-* `-t`, `--standstill-time <standstill-time>`
-    * Minimum time (in seconds) without change in position (per `--min_distance`) before points do
-        not contribute to Moving Time [default: 10]
+* `-e`, `--min-elevation-gain <MIN_ELEVATION_GAIN>`
+  * Minimum change in elevation (in meters) for a point to contribute to Elevation Gain
+  * [default: 10]
+
+* `-d`, `--min-distance <MIN_DISTANCE>`
+  * Minimum change in distance (in meters) for a point to contribute to Total Distance
+  * [default: 1]
+
+* `-t`, `--standstill-time <STANDSTILL_TIME>`
+  * Minimum time (in seconds) without change in position (per --min_distance) before points do not contribute to Moving Time
+  * [default: 10]
+
+* `--join-segments`
+  * Join all segments in a track as one continuous segment instead of processing them separately
+
+* `--join-tracks`
+  * Join all tracks / files together as one continuous track. Implies --join-segments
+
+* `--filter-zero-ele`
+  * Filter out points with an elevation of exactly zero.
+  * Some software emits GPX points with <ele>0</ele> when it doesn't have a good fix, and you will want to discard these to avoid incorrect elevation data.
+
+* `--filter-ele-below <FILTER_ELE_BELOW>`
+  * Filter out points with an elevation below this many meters.
+  * Some software emits GPX points with nonsensical low elevations whan it doesn't have a good fix, and you will want to discard these to avoid incorrect elevation data.
+
+* `-h`, `--help`
+  * Print help information (use `-h` for a summary)
+
+* `-V`, `--version`
+  * Print version information
 
 # Example Output
 
