@@ -6,6 +6,6 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1"
-clap = { version = "4.0.2", features = ["derive"] }
+clap = { version = "4.0.32", features = ["cargo", "derive"] }
 strong-xml = "0.6.2"
 time = { version = "0.3", features = ["parsing"] }

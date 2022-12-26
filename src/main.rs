@@ -15,7 +15,7 @@ mod units;
 use crate::units::{Meters, Feet, Miles};
 
 #[derive(Debug, Parser)]
-#[command(version)]
+#[command(about, version)]
 struct Args {
     /// Minimum change in elevation (in meters) for a point to contribute to Elevation Gain.
     #[arg(short = 'e', long, default_value = "10")]
@@ -97,7 +97,7 @@ impl Point {
                 .or_else(|e| {
                     // HACK: try the time with 'Z' appended, for bad GPX files missing timezone
                     // info.
-                    let result = OffsetDateTime::parse(&(gpx.time.to_owned() + "Z"), &Rfc3339)
+                    let result = OffsetDateTime::parse(&(gpx.time.clone() + "Z"), &Rfc3339)
                         .map_err(|_| e); // restore original error if this fails
                     if result.is_ok() && !HAVE_WARNED_ABOUT_TIMEZONE.swap(true, Ordering::SeqCst) {
                         // if this worked, warn once.
