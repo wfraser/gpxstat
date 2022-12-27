@@ -1,6 +1,25 @@
 use std::fmt::{Display, Formatter, Result as FmtResult};
 use std::str::FromStr;
 
+#[derive(Debug, Copy, Clone)]
+pub enum Unit {
+    Meters(Meters),
+    Kilometers(Kilometers),
+    Feet(Feet),
+    Miles(Miles),
+}
+
+impl Display for Unit {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        match self {
+            Self::Meters(v) => v.fmt(f),
+            Self::Kilometers(v) => v.fmt(f),
+            Self::Feet(v) => v.fmt(f),
+            Self::Miles(v) => v.fmt(f),
+        }
+    }
+}
+
 #[derive(Debug, Copy, Clone, PartialEq, PartialOrd)]
 pub struct Meters(pub f64); // todo: use decimal instead
 
@@ -35,5 +54,14 @@ pub struct Miles(pub Meters);
 impl Display for Miles {
     fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
         write!(f, "{:.1} mi", (self.0).0 * 0.00062137119)
+    }
+}
+
+#[derive(Debug, Copy, Clone)]
+pub struct Kilometers(pub Meters);
+
+impl Display for Kilometers {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:.1} km", (self.0).0 * 0.001)
     }
 }

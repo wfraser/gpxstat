@@ -12,7 +12,7 @@ use time::format_description::well_known::Rfc3339;
 mod gpx;
 mod units;
 
-use crate::units::{Meters, Feet, Miles};
+use crate::units::{Unit, Meters, Kilometers, Feet, Miles};
 
 #[derive(Debug, Parser)]
 #[command(about, version)]
@@ -56,6 +56,12 @@ struct Args {
     /// fix, and you will want to discard these to avoid incorrect elevation data.
     #[arg(long)]
     filter_ele_below: Option<Meters>,
+
+    /// Show distances in kilometers and elevations in meters.
+    ///
+    /// The default is miles and feet.
+    #[arg(short, long)]
+    metric: bool,
 }
 
 fn duration_secs(s: &str) -> Result<Duration> {
@@ -112,6 +118,18 @@ impl Point {
 
 fn main() -> Result<()> {
     let args = Args::parse();
+
+    let unit = if args.metric {
+        Unit::Meters
+    } else {
+        |m| Unit::Feet(Feet(m))
+    };
+
+    let big_unit = if args.metric {
+        |m| Unit::Kilometers(Kilometers(m))
+    } else {
+        |m| Unit::Miles(Miles(m))
+    };
 
     println!("{} v{} by {}",
         env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION"), env!("CARGO_PKG_AUTHORS"));
@@ -310,12 +328,12 @@ fn main() -> Result<()> {
             println!("        median: {}s", median.as_seconds_f64());
             println!("        mode:   {}s", mode.as_seconds_f64());
 
-            println!("    starting elevation: {}", Feet(ele_start));
-            println!("    ending elevation: {}", Feet(ele_end));
-            println!("    min elevation: {}", Feet(ele_min));
-            println!("    max elevation: {}", Feet(ele_max));
-            println!("    elevation gain: {}", Feet(ele_gain));
-            println!("    total distance: {}", Miles(dist_total));
+            println!("    starting elevation: {}", unit(ele_start));
+            println!("    ending elevation: {}", unit(ele_end));
+            println!("    min elevation: {}", unit(ele_min));
+            println!("    max elevation: {}", unit(ele_max));
+            println!("    elevation gain: {}", unit(ele_gain));
+            println!("    total distance: {}", big_unit(dist_total));
             println!("    total time: {}", fmt_duration(time_end - time_start));
             println!("    moving time: {}", fmt_duration(time_moving));
         }
