@@ -40,6 +40,10 @@ Options:
   * Filter out points with an elevation below this many meters.
   * Some software emits GPX points with nonsensical low elevations whan it doesn't have a good fix, and you will want to discard these to avoid incorrect elevation data.
 
+* `-m`, `--metric`
+  * Show distances in kilometers and elevations in meters.
+  * The default is miles and feet.
+
 * `-h`, `--help`
   * Print help information (use `-h` for a summary)
 
@@ -115,6 +119,6 @@ seconds.
 
 # Units
 
-All calculations and parameters are in metric, because that's what GPX uses, but output is converted
-to feet and miles, because I live in the United States and that's what units all my maps are in.
-Maybe I'll make this configurable, but for me it is not a priority.
+All calculations and parameters are in metric, because that's what GPX uses, and output is converted
+to display units based on whether the `--metric` flag was passed or not. The default is to show
+feet and miles, because I live in the United States and that's what units all my maps are in.
