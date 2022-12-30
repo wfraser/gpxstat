@@ -117,7 +117,15 @@ impl Point {
 }
 
 fn main() -> Result<()> {
-    let args = Args::parse();
+    let args = {
+        let mut args = Args::parse();
+
+        if args.join_tracks {
+            args.join_segments = true;
+        }
+
+        args
+    };
 
     let unit = if args.metric {
         Unit::Meters
@@ -182,7 +190,7 @@ fn main() -> Result<()> {
             };
 
             for gpx_seg in gpx_track.segments {
-                let segment = if args.join_tracks || args.join_segments {
+                let segment = if args.join_segments {
                     match track.segments.get_mut(0) {
                         Some(s) => s,
                         None => {
@@ -221,6 +229,10 @@ fn main() -> Result<()> {
 
     for (tnum, track) in tracks.into_iter().enumerate() {
         println!("track {}: {}", tnum + 1, track.name);
+
+        if args.join_tracks {
+            println!("  (and all other tracks)");
+        }
 
         if args.join_segments {
             println!("  (all segments joined)");
