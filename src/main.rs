@@ -208,18 +208,7 @@ fn main() -> Result<()> {
                 };
 
                 for gpx_point in gpx_seg.points {
-                    let p = Point::new(&gpx_point)?;
-                    if args.filter_zero_ele && p.ele == Some(Meters(0.)) {
-                        continue;
-                    }
-                    if let Some(min) = args.filter_ele_below {
-                        if let Some(ele) = p.ele {
-                            if ele < min {
-                                continue;
-                            }
-                        }
-                    }
-                    segment.points.push(p);
+                    segment.points.push(Point::new(&gpx_point)?);
                 }
             }
         }
@@ -268,7 +257,18 @@ fn main() -> Result<()> {
             let mut last_time = None;
             let mut time_deltas = vec![];
 
+            let mut filtered = 0;
+
             for point in seg.points {
+                if let Some(ele) = point.ele {
+                    if (if let Some(min) = args.filter_ele_below { ele < min } else { false })
+                        || (args.filter_zero_ele && ele == Meters(0.))
+                    {
+                        filtered += 1;
+                        continue;
+                    }
+                }
+
                 time_end = point.time;
 
                 if let Some(t) = last_time {
@@ -321,6 +321,10 @@ fn main() -> Result<()> {
                         ele_last = Some(e);
                     }
                 }
+            }
+
+            if filtered > 0 {
+                println!("    filtered out points: {filtered}");
             }
 
             if time_deltas.is_empty() {
