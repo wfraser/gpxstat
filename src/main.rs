@@ -147,19 +147,19 @@ fn main() -> Result<()> {
 
     let min_moving_speed = args.min_distance.0
         / args.standstill_time.as_seconds_f64();
-    println!("  min moving speed: {} m/s", min_moving_speed);
+    println!("  min moving speed: {min_moving_speed} m/s");
 
     let mut tracks = Vec::<Track>::with_capacity(args.input_paths.len());
     for path in args.input_paths {
         let input = fs::read_to_string(&path)
-            .with_context(|| format!("failed to read GPX file to string: {:?}", path))?;
+            .with_context(|| format!("failed to read GPX file to string: {path:?}"))?;
 
         let gpx = gpx::Gpx::from_str(&input)
-            .with_context(|| format!("failed to parse GPX file {:?}", path))?;
+            .with_context(|| format!("failed to parse GPX file {path:?}"))?;
 
         let file_name = gpx.metadata.as_ref().and_then(|m| m.name.as_deref());
 
-        println!("file {:?}:", path);
+        println!("file {path:?}:");
         println!("  name: {}", file_name.unwrap_or("<unnamed>"));
         println!("  creator: {}", gpx.creator);
         println!("  tracks: {}", gpx.tracks.len());
@@ -362,7 +362,7 @@ fn fmt_duration(d: Duration) -> String {
     let hours = d.whole_hours();
     let from_hours = Duration::hours(hours);
     let mins = (d - from_hours).whole_minutes();
-    format!("{}:{:02}", hours, mins)
+    format!("{hours}:{mins:02}")
 }
 
 fn distance(a: &Point, b: &Point) -> Meters {
