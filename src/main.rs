@@ -244,7 +244,7 @@ fn main() -> Result<()> {
             let mut time_end: OffsetDateTime;
             let mut time_moving = Duration::seconds(0);
 
-            if let Some(point) = seg.points.get(0) {
+            if let Some(point) = seg.points.first() {
                 time_start = point.time;
                 time_end = point.time;
             } else {
