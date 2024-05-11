@@ -19,8 +19,8 @@ pub struct Gpx<'a> {
     //#[xml(child = "extensions")],
     //pub extensions: Option<Extensions<'a>>,
 
-    #[xml(attr = "version")]
-    pub version: Cow<'a, str>,
+    //#[xml(attr = "version")]
+    //pub version: Cow<'a, str>,
 
     #[xml(attr = "creator")]
     pub creator: Cow<'a, str>,

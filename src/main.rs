@@ -230,10 +230,10 @@ fn main() -> Result<()> {
         for (snum, seg) in track.segments.into_iter().enumerate() {
             println!("  segment {}:", snum + 1);
 
-            let mut ele_start = Meters(std::f64::NAN);
-            let mut ele_min = Meters(std::f64::MAX);
-            let mut ele_max = Meters(std::f64::MIN);
-            let mut ele_end = Meters(std::f64::NAN);
+            let mut ele_start = Meters(f64::NAN);
+            let mut ele_min = Meters(f64::MAX);
+            let mut ele_max = Meters(f64::MIN);
+            let mut ele_end = Meters(f64::NAN);
             let mut ele_gain = Meters(0.);
             let mut ele_last: Option<Meters> = None;
 
