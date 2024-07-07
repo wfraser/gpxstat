@@ -351,7 +351,9 @@ fn main() -> Result<()> {
             println!("    elevation gain: {}", unit(ele_gain));
             println!("    total distance: {}", big_unit(dist_total));
             println!("    total time: {}", fmt_duration(time_end - time_start));
+            println!("    total speed: {}/h", big_unit(speed(dist_total, time_end - time_start)));
             println!("    moving time: {}", fmt_duration(time_moving));
+            println!("    moving speed: {}/h", big_unit(speed(dist_total, time_moving)));
         }
     }
 
@@ -387,4 +389,11 @@ fn dist_time_speed(a: &Point, b: &Point) -> (Meters, Duration, f64) {
     let time = if a.time > b.time { a.time - b.time } else { b.time - a.time };
     let speed = dist.0 / time.as_seconds_f64().abs();
     (dist, time, speed)
+}
+
+/// Result is really meters per hour.
+fn speed(dist: Meters, time: Duration) -> Meters {
+    let hours = time.as_seconds_f64() / 60. / 60.;
+    let speed = dist.0 / hours;
+    Meters(speed)
 }
