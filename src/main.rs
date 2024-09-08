@@ -244,6 +244,9 @@ fn main() -> Result<()> {
             let mut time_end: OffsetDateTime;
             let mut time_moving = Duration::seconds(0);
 
+            // Meters/sec
+            let mut max_speed = 0.0f64;
+
             if let Some(point) = seg.points.first() {
                 time_start = point.time;
                 time_end = point.time;
@@ -289,6 +292,7 @@ fn main() -> Result<()> {
                         if speed >= min_moving_speed {
                             time_moving += time;
                         }
+                        max_speed = max_speed.max(speed);
                         dist_last = Some(point);
                     } else {
                         use_point = false;
@@ -354,6 +358,7 @@ fn main() -> Result<()> {
             println!("    total speed: {}/h", big_unit(speed(dist_total, time_end - time_start)));
             println!("    moving time: {}", fmt_duration(time_moving));
             println!("    moving speed: {}/h", big_unit(speed(dist_total, time_moving)));
+            println!("    max speed: {}/h", big_unit(Meters(max_speed*60.*60.)));
         }
     }
 
